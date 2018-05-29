@@ -45,5 +45,3 @@ find_package(Threads REQUIRED)
 # add the executable
 add_executable(leica_streaming_receiver src/main.cpp src/tcp_total_station_interface.cpp)
 target_link_libraries(leica_streaming_receiver ${Boost_LIBRARIES} Threads::Threads)
-add_executable(server src/server.cpp)
-target_link_libraries(server ${Boost_LIBRARIES} Threads::Threads)
