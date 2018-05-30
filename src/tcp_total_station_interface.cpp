@@ -2,22 +2,23 @@
 #include <string>
 #include <thread>
 #include <boost/asio.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "tcp_total_station_interface.h"
 
-TCPTSInterface::TCPTSInterface()
+TCPTSInterface::TCPTSInterface(void (*f)(const double, const double, const double))
   : io_context_(new boost::asio::io_context()),
     socket_(new boost::asio::ip::tcp::socket(*io_context_)),
-    readData_(100),
+    readData_(61),
+    locationCallback(f),
     TSInterface() {}
 
 TCPTSInterface::~TCPTSInterface() {
-  contextThread_.join(); 
+  contextThread_.join();
 }
 
 bool TCPTSInterface::connect(boost::asio::ip::tcp::endpoint endpoint) {
-  try
-  {
+  try {
     socket_->async_connect(endpoint,
           [this](const boost::system::error_code& ec) {
             if (!ec) {
@@ -25,7 +26,6 @@ bool TCPTSInterface::connect(boost::asio::ip::tcp::endpoint endpoint) {
             }
           });
 
-    //io_context_->run();
     contextThread_ = std::thread([this](){ io_context_->run(); });
   } catch (std::exception& e) {
     std::cerr << "Exception: " << e.what() << "\n";
@@ -33,7 +33,7 @@ bool TCPTSInterface::connect(boost::asio::ip::tcp::endpoint endpoint) {
 }
 
 void TCPTSInterface::start() {
-  std::vector<char> command{'%', 'R', '8', 'Q', ',', '1', ':'};
+  std::vector<char> command{'%', 'R', '8', 'Q', ',', '1', ':', 0x0d/*CR*/, 0x0a/*LF*/};
 
   boost::asio::async_write(*socket_,
                            boost::asio::buffer(command),
@@ -45,7 +45,7 @@ void TCPTSInterface::start() {
 }
 
 void TCPTSInterface::end() {
-  std::vector<char> command {'%', 'R', '8', 'Q', ',', '2', ':'};
+  std::vector<char> command {'%', 'R', '8', 'Q', ',', '2', ':', 0x0d/*CR*/, 0x0a/*LF*/};
 
   boost::asio::async_write(*socket_,
                            boost::asio::buffer(command),
@@ -56,12 +56,11 @@ void TCPTSInterface::end() {
                           );
 }
 
-bool TCPTSInterface::write(std::string str) {
-}
+bool TCPTSInterface::write(std::string str) {}
 
 void TCPTSInterface::startReader() {
   boost::asio::async_read(*socket_,
-                          boost::asio::buffer(readData_),
+                          boost::asio::buffer(&readData_[0], readData_.size()),
                           std::bind(&TCPTSInterface::readHandler,
                                     this,
                                     std::placeholders::_1,
@@ -71,8 +70,22 @@ void TCPTSInterface::startReader() {
 
 void TCPTSInterface::readHandler(const boost::system::error_code& ec,
                                  std::size_t bytes_transferred) {
+  std::string str = "";
   for (char ch : readData_) {
     std::cout << ch;
+    str += ch;
+  }
+
+  if (readData_[0] == 'T') {
+    std::vector<std::string> results;
+
+    boost::split(results, str, [](char c){return c == ',';});
+
+    double x = std::stod(results[1]);
+    double y = std::stod(results[2]);
+    double z = std::stod(results[3]);
+
+    locationCallback(x, y, z);
   }
 
   boost::asio::async_read(*socket_,

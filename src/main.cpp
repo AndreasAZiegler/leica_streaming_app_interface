@@ -8,6 +8,15 @@ g++ main.cpp -lboost_system -lboost_thread -lpthread -o leica_streaming_receiver
 
 #include "tcp_total_station_interface.h"
 
+void locationCallback(const double x,
+                      const double y,
+                      const double z) {
+  std::cout << "Prism is at x: " << x 
+            << " y: " << y
+            << " z: " << z << std::endl;
+  std::cout << std::endl;
+}
+
 
 int main(void) {
 
@@ -21,7 +30,7 @@ int main(void) {
   boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(ip),
                                           port);
 
-  TCPTSInterface ts;
+  TCPTSInterface ts(&locationCallback);
   ts.connect(endpoint);
 
   std::string ch;
