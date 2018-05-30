@@ -1,8 +1,6 @@
 #include <iostream>
 #include <string>
 #include <thread>
-#include <boost/asio.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include "tcp_total_station_interface.h"
 
@@ -11,6 +9,7 @@ TCPTSInterface::TCPTSInterface(void (*f)(const double, const double, const doubl
     socket_(new boost::asio::ip::tcp::socket(*io_context_)),
     readData_(61),
     locationCallback(f),
+    timer_(*io_context_, boost::asio::chrono::milliseconds(500)),
     TSInterface() {}
 
 TCPTSInterface::~TCPTSInterface() {
@@ -23,6 +22,7 @@ bool TCPTSInterface::connect(boost::asio::ip::tcp::endpoint endpoint) {
           [this](const boost::system::error_code& ec) {
             if (!ec) {
               startReader();
+              startTimer();
             }
           });
 
@@ -68,6 +68,11 @@ void TCPTSInterface::startReader() {
                           );
 }
 
+void TCPTSInterface::startTimer() {
+  timer_.async_wait(std::bind(&TCPTSInterface::timerHandler,
+                              this));
+}
+
 void TCPTSInterface::readHandler(const boost::system::error_code& ec,
                                  std::size_t bytes_transferred) {
   std::string str = "";
@@ -102,4 +107,9 @@ void TCPTSInterface::writeHandler(const boost::system::error_code& ec,
   if (!ec) {
     std::cout << "Command sent." << std::endl;
   }
+}
+
+void TCPTSInterface::timerHandler() {
+  std::cout << "Timer" << std::endl;
+  startTimer();
 }

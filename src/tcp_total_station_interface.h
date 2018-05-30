@@ -6,6 +6,9 @@
 #include <thread>
 #include <functional>
 
+#include <boost/asio.hpp>
+#include <boost/algorithm/string.hpp>
+
 #include "total_station_interface.h"
 
 class TCPTSInterface: public TSInterface {
@@ -21,11 +24,18 @@ class TCPTSInterface: public TSInterface {
 
  private:
   void startReader();
+
+  void startTimer();
+
   bool write(std::string str);
+
   void readHandler(const boost::system::error_code& ec,
                    std::size_t bytes_transferred);
+
   void writeHandler(const boost::system::error_code& ec,
                     std::size_t bytes_transferred);
+
+  void timerHandler();
 
   std::unique_ptr<boost::asio::io_context> io_context_;
   std::unique_ptr<boost::asio::ip::tcp::socket> socket_;
@@ -34,4 +44,6 @@ class TCPTSInterface: public TSInterface {
   std::thread contextThread_;
 
   std::function<void(const double, const double, const double)> locationCallback;
+
+  boost::asio::steady_timer timer_;
 };
