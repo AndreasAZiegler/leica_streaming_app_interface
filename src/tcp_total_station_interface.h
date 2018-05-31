@@ -5,6 +5,7 @@
 #include <memory>
 #include <thread>
 #include <functional>
+#include <mutex>
 
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
@@ -21,7 +22,6 @@ class TCPTSInterface: public TSInterface {
   void start() override;
   void end() override;
 
-
  private:
   void startReader();
 
@@ -37,6 +37,8 @@ class TCPTSInterface: public TSInterface {
 
   void timerHandler();
 
+  void searchPrism(void);
+
   std::unique_ptr<boost::asio::io_context> io_context_;
   std::unique_ptr<boost::asio::ip::tcp::socket> socket_;
 
@@ -45,5 +47,7 @@ class TCPTSInterface: public TSInterface {
 
   std::function<void(const double, const double, const double)> locationCallback;
 
-  boost::asio::steady_timer timer_;
+  boost::asio::deadline_timer timer_;
+  bool messagesReceivedFlag_;
+  std::mutex messageReceivedMutex_;
 };

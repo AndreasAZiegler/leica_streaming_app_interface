@@ -2,6 +2,8 @@
 #include <string>
 #include <thread>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 #include "tcp_total_station_interface.h"
 
 TCPTSInterface::TCPTSInterface(void (*f)(const double, const double, const double))
@@ -9,7 +11,7 @@ TCPTSInterface::TCPTSInterface(void (*f)(const double, const double, const doubl
     socket_(new boost::asio::ip::tcp::socket(*io_context_)),
     readData_(61),
     locationCallback(f),
-    timer_(*io_context_, boost::asio::chrono::milliseconds(500)),
+    timer_(*io_context_, boost::posix_time::milliseconds(500)),
     TSInterface() {}
 
 TCPTSInterface::~TCPTSInterface() {
@@ -26,6 +28,7 @@ bool TCPTSInterface::connect(boost::asio::ip::tcp::endpoint endpoint) {
             }
           });
 
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work = boost::asio::make_work_guard(*io_context_);
     contextThread_ = std::thread([this](){ io_context_->run(); });
   } catch (std::exception& e) {
     std::cerr << "Exception: " << e.what() << "\n";
@@ -69,6 +72,7 @@ void TCPTSInterface::startReader() {
 }
 
 void TCPTSInterface::startTimer() {
+  //boost::asio::steady_timer timer_(*io_context_, boost::asio::chrono::milliseconds(500));
   timer_.async_wait(std::bind(&TCPTSInterface::timerHandler,
                               this));
 }
@@ -91,6 +95,9 @@ void TCPTSInterface::readHandler(const boost::system::error_code& ec,
     double z = std::stod(results[3]);
 
     locationCallback(x, y, z);
+
+    std::lock_guard<std::mutex> guard(messageReceivedMutex_);
+    messagesReceivedFlag_ = true;
   }
 
   boost::asio::async_read(*socket_,
@@ -110,6 +117,18 @@ void TCPTSInterface::writeHandler(const boost::system::error_code& ec,
 }
 
 void TCPTSInterface::timerHandler() {
-  std::cout << "Timer" << std::endl;
-  startTimer();
+  std::lock_guard<std::mutex> guard(messageReceivedMutex_);
+  if (!messagesReceivedFlag_) {
+    searchPrism();
+  }
+
+  messagesReceivedFlag_ = false;
+
+  // Restart timer
+  timer_.expires_at(timer_.expires_at() + boost::posix_time::milliseconds(500));
+  timer_.async_wait(std::bind(&TCPTSInterface::timerHandler, this));
+}
+
+void TCPTSInterface::searchPrism(void) {
+  std::cout << "Search prism" << std::endl;
 }
