@@ -19,6 +19,9 @@
 
 #include "total_station_interface.h"
 
+/**
+ * @brief Possible states of the total station.
+ */
 enum class TSState { off, on };
 
 /**
@@ -32,6 +35,10 @@ class TCPTSInterface: public TSInterface {
    * @param f Callback function to receive the x, y and z location of the tracked prism.
    */
   TCPTSInterface(void (*f)(const double, const double, const double));
+
+  /**
+   * @brief Close socket and join io_context thread.
+   */
   ~TCPTSInterface();
 
   /**
@@ -98,9 +105,12 @@ class TCPTSInterface: public TSInterface {
    */
   void timerHandler();
 
+  /**
+   * @brief Starts the prism search on the total station.
+   */
   void searchPrism(void);
 
-  TSState tsState_;
+  TSState tsState_;                                       /**< State of the total station */
 
   std::unique_ptr<boost::asio::io_context> io_context_;   /**< io context object  */
   std::unique_ptr<boost::asio::ip::tcp::socket> socket_;  /**< Socket */
@@ -110,11 +120,11 @@ class TCPTSInterface: public TSInterface {
 
   std::function<void(const double, const double, const double)> locationCallback; /**< Function pointer for the callback function */
 
-  bool timerStartedFlag_;
+  bool timerStartedFlag_;                                 /**< Flag indicating if the timer started or not */
   boost::asio::deadline_timer timer_;                     /**< Deadline timer */
   bool messagesReceivedFlag_;                             /**< Flag indicating if a message was received */
-  std::mutex messageReceivedMutex_;                       /**< Mutex for the flag */
+  std::mutex messageReceivedMutex_;                       /**< Mutex for the corresponding flag */
 
-  bool searchingPrismFlag_;
-  std::mutex searchingPrismMutex_;
+  bool searchingPrismFlag_;                               /**< Flag indicating that the total station searches the prism */
+  std::mutex searchingPrismMutex_;                        /**< Mutex for the corresponding flag */
 };

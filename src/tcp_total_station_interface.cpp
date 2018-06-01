@@ -81,8 +81,6 @@ void TCPTSInterface::write(std::vector<char> command) {
 }
 
 void TCPTSInterface::startTimer() {
-  //timer_.async_wait(std::bind(&TCPTSInterface::timerHandler,
-  //                            this));
   std::cout << "Start timer" << std::endl;
   timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(2));
   timer_.async_wait(std::bind(&TCPTSInterface::timerHandler, this));
@@ -102,13 +100,17 @@ void TCPTSInterface::readHandler(const boost::system::error_code& ec,
     std::cout << data << std::endl;
 
     
+    // Check for responses if the total station searches the prism
     if (searchingPrismFlag_) {
+      // Catch the response
       if (data.find("%R8P,0,0:") != std::string::npos) {
         std::cout << "Got an answer." << std::endl;
+        
+        // Catch the negative response
         if (data.find(":31") != std::string::npos) {
           std::cout << "Prism not found!" << std::endl;
           searchPrism();
-        } else if (data.find(":0") != std::string::npos) {
+        } else if (data.find(":0") != std::string::npos) { // Catch the positive response
           std::cout << "Prism found" << std::endl;
           {
             std::lock_guard<std::mutex> guard(searchingPrismMutex_);
@@ -135,6 +137,7 @@ void TCPTSInterface::readHandler(const boost::system::error_code& ec,
       std::lock_guard<std::mutex> guard(messageReceivedMutex_);
       messagesReceivedFlag_ = true;
 
+      // Start timer if it is not yet started
       if (!timerStartedFlag_) {
         startTimer();
         timerStartedFlag_ = true;
@@ -166,6 +169,8 @@ void TCPTSInterface::timerHandler() {
       // Check if a message was received since last time.
       std::lock_guard<std::mutex> guard1(messageReceivedMutex_);
       std::lock_guard<std::mutex> guard2(searchingPrismMutex_);
+
+      // Start to search the prism if no message was received
       if (!messagesReceivedFlag_ && !searchingPrismFlag_) {
         std::cout << "Prism lost!" << std::endl;
         searchPrism();
