@@ -21,6 +21,7 @@ TCPTSInterface::TCPTSInterface(void (*f)(const double, const double, const doubl
     timerStartedFlag_(false),
     searchingPrismFlag_(false),
     tsState_(TSState::on),
+    prismPosition_(3),
     TSInterface() {}
 
 TCPTSInterface::~TCPTSInterface() {
@@ -57,6 +58,12 @@ void TCPTSInterface::end() {
   std::vector<char> command {'%', 'R', '8', 'Q', ',', '2', ':', 0x0d/*CR*/, 0x0a/*LF*/};
   write(command);
   tsState_ = TSState::off;
+}
+
+void TCPTSInterface::setPrismPosition(double x, double y, double z) {
+  prismPosition_[0] = x;
+  prismPosition_[1] = y;
+  prismPosition_[2] = z;
 }
 
 void TCPTSInterface::startReader() {

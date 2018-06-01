@@ -59,6 +59,8 @@ class TCPTSInterface: public TSInterface {
    */
   void end() override;
 
+  void setPrismPosition(double x, double y, double z);
+
  private:
   /**
    * @brief Starts the tcp reader.
@@ -111,6 +113,7 @@ class TCPTSInterface: public TSInterface {
   void searchPrism(void);
 
   TSState tsState_;                                       /**< State of the total station */
+  std::vector<double> prismPosition_;
 
   std::unique_ptr<boost::asio::io_context> io_context_;   /**< io context object  */
   std::unique_ptr<boost::asio::ip::tcp::socket> socket_;  /**< Socket */
