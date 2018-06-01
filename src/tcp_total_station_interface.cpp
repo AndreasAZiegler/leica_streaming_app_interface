@@ -30,7 +30,9 @@ TCPTSInterface::~TCPTSInterface() {
   contextThread_.join();
 }
 
-void TCPTSInterface::connect(boost::asio::ip::tcp::endpoint endpoint) {
+void TCPTSInterface::connect(std::string ip, int port) {
+  boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(ip),
+                                          port);
   try {
     // Connect to total station and call startReader and startTimer
     // if successfull

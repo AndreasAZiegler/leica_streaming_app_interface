@@ -27,11 +27,8 @@ int main(void) {
 
   int port = 5001;
 
-  boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(ip),
-                                          port);
-
   TCPTSInterface ts(&locationCallback);
-  ts.connect(endpoint);
+  ts.connect(ip, port);
 
   std::string ch;
   while (true) {

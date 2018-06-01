@@ -45,9 +45,11 @@ class TCPTSInterface: public TSInterface {
    * @brief Tries to open a tcp connection to the total station
    *        Initializes the tcp connection to the total station
    *        and the timer to detect if no message are received anymore.
-   * @param endpoint boost::asio::ip::tcp::endpoint
+   *
+   * @param ip The ip address as std::string
+   * @param port The port number as int
    */
-  void connect(boost::asio::ip::tcp::endpoint endpoint);
+  void connect(std::string ip, int port);
 
   /**
    * @brief Sends the start command to the total station.
